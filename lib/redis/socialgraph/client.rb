@@ -75,7 +75,17 @@ class Redis
         value
       end
 
-
+      # returns a distance between a user and a list of friends (value from -2 to 2 as distance method)
+      # where -2 is not in range,-1 unknown ,0 me  ,1 friend , 2 fof
+      # as hash {friend_id=>distance,friend_id=>distance}
+      def distances(user_id,friend_ids)
+        results = Hash.new(-2)
+        friend_ids.uniq!
+        friend_ids.each do |friend_id|
+          results[friend_id] = distance(user_id,friend_id)
+        end
+        results
+      end
     end
   end
 end
