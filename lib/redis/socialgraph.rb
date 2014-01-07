@@ -13,6 +13,22 @@ class Redis
       end
     end
 
+    # Transactionally and reciprocally add a friendship
+    def self.add_friend(user_id, friend_id)
+      REDIS.multi do
+        REDIS.sadd key(user_id), friend_id
+        REDIS.sadd key(friend_id), user_id
+      end
+    end
+
+    # Transactionally and reciprocally remove a friendship
+    def self.remove_friend(user_id, friend_id)
+      REDIS.multi do
+        REDIS.srem key(user_id), friend_id
+        REDIS.srem key(friend_id), user_id
+      end
+    end
+
     # For the given user id returns an Array of friend ids
     def self.friend_ids(user_id)
       REDIS.smembers(key(user_id)).map(&:to_i)
@@ -34,6 +50,23 @@ class Redis
       friend_ids.inject({}) do |acc, friend_id|
         acc.merge friend_id => mutual_friends(user_id, friend_id)
       end
+    end
+
+    # For two user ids return the distance where:
+    # -1 = unknown
+    # 0 = me
+    # 1 = friend
+    # 2 = friend of friend
+    def self.distance(user_id,friend_id)
+      value = -1
+      if (user_id==friend_id)
+        value = 0
+      elsif REDIS.sismember(key(user_id),friend_id)
+        value = 1
+      elsif friends_of_friends_ids(user_id).include?(friend_id)
+        value = 2
+      end
+      value
     end
 
   end
